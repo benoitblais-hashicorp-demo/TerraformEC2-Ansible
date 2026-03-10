@@ -1,0 +1,19 @@
+#cloud-config
+write_files:
+  - path: /etc/ssh/vault-ca-public-key.pem
+    owner: root:root
+    permissions: '0644'
+    content: ${vault_ssh_ca_public_key}
+    encoding: b64
+
+runcmd:
+  - |
+    if grep -q "no_public_key" /etc/ssh/vault-ca-public-key.pem; then
+      exit 0
+    fi
+
+    # Add TrustedUserCAKeys to SSH configuration if not already present
+    if ! grep -q "TrustedUserCAKeys" /etc/ssh/sshd_config; then
+      echo "TrustedUserCAKeys /etc/ssh/vault-ca-public-key.pem" >> /etc/ssh/sshd_config
+      systemctl restart sshd
+    fi
